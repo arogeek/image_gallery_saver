@@ -25,6 +25,7 @@ import java.io.IOException
 import android.text.TextUtils
 import android.webkit.MimeTypeMap
 import java.io.OutputStream
+import android.util.Log
 
 class ImageGallerySaverPlugin : FlutterPlugin, MethodCallHandler {
     private lateinit var methodChannel: MethodChannel
@@ -70,36 +71,39 @@ class ImageGallerySaverPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun generateUri(extension: String = "", name: String? = null): Uri? {
+        Log.d("GallerySaver", "Extension: $extension")
+        Log.d("GallerySaver", "Name: ${name.toString()}")
 
-    var fileName = name ?: System.currentTimeMillis().toString()
-    val mimeType = getMIMEType(extension)
+        var fileName = name ?: System.currentTimeMillis().toString()
+        val mimeType = getMIMEType(extension)
 
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        // >= Android 10
-        val uri = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // >= Android 10
+            val uri = MediaStore.Downloads.EXTERNAL_CONTENT_URI
 
-        applicationContext?.contentResolver?.insert(uri, ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-        })
+            applicationContext?.contentResolver?.insert(uri, ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            })
 
-    } else {
-        // < Android 10
-        val storePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
+        } else {
+            // < Android 10
+            val storePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
 
-        storePath?.let { path ->
-            val appDir = File(path).apply {
-                if (!exists()) {
-                    mkdir()
+            storePath?.let { path ->
+                val appDir = File(path).apply {
+                    if (!exists()) {
+                        mkdir()
+                    }
                 }
-            }
 
-            val file = File(appDir, if (extension.isNotEmpty()) "$fileName.$extension" else fileName)
-            Uri.fromFile(file)
+                val file = File(appDir, if (extension.isNotEmpty()) "$fileName.$extension" else fileName)
+                Uri.fromFile(file)
+            }
         }
     }
-}
+
 
     /**
      * get file Mime Type
