@@ -70,8 +70,6 @@ class ImageGallerySaverPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun generateUri(extension: String = "", name: String? = null): Uri? {
-    Log.d("GallerySaver", "Extension: $extension")
-    Log.d("GallerySaver", "Name: ${name.toString()}")
 
     var fileName = name ?: System.currentTimeMillis().toString()
     val mimeType = getMIMEType(extension)
