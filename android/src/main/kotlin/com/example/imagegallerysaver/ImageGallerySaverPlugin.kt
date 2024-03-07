@@ -70,52 +70,38 @@ class ImageGallerySaverPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun generateUri(extension: String = "", name: String? = null): Uri? {
-        var fileName = name ?: System.currentTimeMillis().toString()
-        val mimeType = getMIMEType(extension)
-        val isVideo = mimeType?.startsWith("video")==true
+    Log.d("GallerySaver", "Extension: $extension")
+    Log.d("GallerySaver", "Name: ${name.toString()}")
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // >= android 10
-            val uri = when {
-                isVideo -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-                else -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-            }
+    var fileName = name ?: System.currentTimeMillis().toString()
+    val mimeType = getMIMEType(extension)
 
-            val values = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(
-                    MediaStore.MediaColumns.RELATIVE_PATH, when {
-                        isVideo -> Environment.DIRECTORY_MOVIES
-                        else -> Environment.DIRECTORY_PICTURES
-                    }
-                )
-                if (!TextUtils.isEmpty(mimeType)) {
-                    put(when {isVideo -> MediaStore.Video.Media.MIME_TYPE
-                        else -> MediaStore.Images.Media.MIME_TYPE
-                    }, mimeType)
-                }
-            }
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        // >= Android 10
+        val uri = MediaStore.Downloads.EXTERNAL_CONTENT_URI
 
-            applicationContext?.contentResolver?.insert(uri, values)
+        applicationContext?.contentResolver?.insert(uri, ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+        })
 
-        } else {
-            // < android 10
-            val storePath =
-                Environment.getExternalStoragePublicDirectory(when {
-                    isVideo -> Environment.DIRECTORY_MOVIES
-                    else -> Environment.DIRECTORY_PICTURES
-                }).absolutePath
-            val appDir = File(storePath).apply {
+    } else {
+        // < Android 10
+        val storePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
+
+        storePath?.let { path ->
+            val appDir = File(path).apply {
                 if (!exists()) {
                     mkdir()
                 }
             }
 
-            val file =
-                File(appDir, if (extension.isNotEmpty()) "$fileName.$extension" else fileName)
+            val file = File(appDir, if (extension.isNotEmpty()) "$fileName.$extension" else fileName)
             Uri.fromFile(file)
         }
     }
+}
 
     /**
      * get file Mime Type
